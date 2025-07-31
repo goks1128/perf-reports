@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Professional Performance Analysis Report</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #e91e63 0%, #ad1457 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #c2185b 0%, #e91e63 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 2px,
+                rgba(255,255,255,0.05) 2px,
+                rgba(255,255,255,0.05) 4px
+            );
+            animation: slide 20s linear infinite;
+        }
+        
+        @keyframes slide {
+            0% { transform: translateX(-100px) translateY(-100px); }
+            100% { transform: translateX(100px) translateY(100px); }
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .export-buttons {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+        }
+        
+        .export-btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-left: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 30px;
+        }
+        
+        .metric-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid #e91e63;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .metric-card h3 {
+            color: #e91e63;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+        
+        .metric-value {
+            font-size: 2.2em;
+            font-weight: bold;
+            color: #c2185b;
+            margin-bottom: 5px;
+        }
+        
+        .metric-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .performance-score {
+            background: linear-gradient(135deg, #e91e63 0%, #ad1457 100%);
+            color: white;
+            text-align: center;
+        }
+        
+        .performance-score .metric-value {
+            color: white;
+            font-size: 3em;
+        }
+        
+        .pass-fail-status {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            text-align: center;
+        }
+        
+        .pass-fail-status .metric-value {
+            color: white;
+            font-size: 2.5em;
+        }
+        
+        .section {
+            margin: 30px;
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .section-header {
+            background: linear-gradient(135deg, #e91e63 0%, #c2185b 100%);
+            color: white;
+            padding: 20px 30px;
+            font-size: 1.3em;
+            font-weight: bold;
+        }
+        
+        .section-content {
+            padding: 30px;
+        }
+        
+        .chart-container {
+            height: 400px;
+            margin: 20px 0;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        
+        .performance-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .performance-table th {
+            background: linear-gradient(135deg, #e91e63 0%, #c2185b 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .performance-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .performance-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .total-row {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            font-weight: bold;
+        }
+        
+        .color-legend {  
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .performance-excellent { background-color: #28a745; color: white; }
+        .performance-good { background-color: #ffc107; color: black; }
+        .performance-fair { background-color: #fd7e14; color: white; }
+        .performance-poor { background-color: #dc3545; color: white; }
+        
+        .recommendations {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            border-left: 5px solid #ffc107;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .recommendations h4 {
+            color: #856404;
+            margin-bottom: 15px;
+        }
+        
+        .recommendations ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .recommendations li {
+            padding: 5px 0;
+            color: #856404;
+        }
+        
+        .recommendations li::before {
+            content: "▶ ";
+            color: #ffc107;
+            font-weight: bold;
+        }
+        
+        .pass-fail-criteria {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .criteria-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #e91e63;
+        }
+        
+        .criteria-pass {
+            border-left-color: #28a745;
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        }
+        
+        .criteria-fail {
+            border-left-color: #dc3545;
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+        }
+        
+        @media print {
+            body { background: white; padding: 0; }
+            .container { box-shadow: none; border-radius: 0; }
+            .export-buttons { display: none; }
+            .chart-container { height: 300px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Export Buttons -->
+        <div class="export-buttons">
+            <button class="export-btn" onclick="exportToPDF()">📄 Export PDF</button>
+            <button class="export-btn" onclick="window.print()">🖨️ Print</button>
+        </div>
+        
+        <!-- Header Section -->
+        <div class="header">
+            <h1>Performance Analysis Dashboard</h1>
+            <p>Comprehensive Load Testing Report & Analysis with Trend Comparison</p>
+        </div>
+        
+        <!-- Executive Summary -->
+        <div class="section">
+            <div class="section-header">Executive Summary</div>
+            <div class="section-content">
+                
+        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+            <div style="background: linear-gradient(135deg, #e74c3c20 0%, #e74c3c10 100%); border-left: 5px solid #e74c3c; padding: 30px; border-radius: 15px; text-align: center;">
+                <h3 style="color: #e74c3c; margin-bottom: 15px; font-size: 1.4em;">❌ Test Result</h3>
+                <div style="font-size: 4em; font-weight: bold; color: #e74c3c; margin-bottom: 15px;">FAIL</div>
+                <div style="font-size: 1.2em; color: #e74c3c;">Quality gates not met</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); border-left: 5px solid #ffc107; padding: 20px; border-radius: 10px; text-align: center;">
+                <h4 style="color: #856404; margin-bottom: 10px;">Total Requests</h4>
+                <div style="font-size: 2.2em; font-weight: bold; color: #856404;">1,741</div>
+                <div style="color: #856404; font-size: 0.9em;">Processed</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%); border-left: 5px solid #dc3545; padding: 20px; border-radius: 10px; text-align: center;">
+                <h4 style="color: #721c24; margin-bottom: 10px;">Error Count</h4>
+                <div style="font-size: 2.2em; font-weight: bold; color: #721c24;">1</div>
+                <div style="color: #721c24; font-size: 0.9em;">Failed</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%); border-left: 5px solid #17a2b8; padding: 20px; border-radius: 10px; text-align: center;">
+                <h4 style="color: #0c5460; margin-bottom: 10px;">Throughput</h4>
+                <div style="font-size: 2.2em; font-weight: bold; color: #0c5460;">0.5</div>
+                <div style="color: #0c5460; font-size: 0.9em;">req/sec</div>
+            </div>
+        </div>
+        
+            </div>
+        </div>
+        
+        <!-- Performance Classification Legend -->
+        <div class="section">
+            <div class="section-header">Performance Classification Legend</div>
+            <div class="section-content">
+                <div class="color-legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #2ecc71;"></div>
+                        <span>Excellent (&lt; 1 second)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #3498db;"></div>
+                        <span>Good (1-2 seconds)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #f39c12;"></div>
+                        <span>Fair (2-3 seconds)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #e74c3c;"></div>
+                        <span>Poor (&gt; 3 seconds)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Performance Statistics Table -->
+        <div class="section">
+            <div class="section-header">Detailed Performance Statistics</div>
+            <div class="section-content">
+                <table class="performance-table">
+                    <thead>
+                        <tr>
+                            <th>Transaction Name</th>
+                            <th>Sample Count</th>
+                            <th>Average (s)</th>
+                            <th>Min (s)</th>
+                            <th>Max (s)</th>
+                            <th>90th Percentile (s)</th>
+                            <th>Error Rate (%)</th>
+                            <th>Throughput (req/s)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                <tr class="">
+                    <td><strong>BP04_Challenges_Q4 Full Team Leaderboard</strong></td>
+                    <td>165</td>
+                    <td class="performance-excellent">0.187</td>
+                    <td class="">0.044</td>
+                    <td class="">2.056</td>
+                    <td class="performance-excellent">0.395</td>
+                    <td class="">0.00%</td>
+                    <td class="">0.04</td>
+                </tr>
+            
+                <tr class="">
+                    <td><strong>BP03_Challenges_Q3 Full Individual Leaderboard</strong></td>
+                    <td>166</td>
+                    <td class="performance-excellent">0.195</td>
+                    <td class="">0.054</td>
+                    <td class="">1.935</td>
+                    <td class="performance-excellent">0.436</td>
+                    <td class="performance-poor">0.60%</td>
+                    <td class="">0.05</td>
+                </tr>
+            
+                <tr class="">
+                    <td><strong>BP07_Challenges_Q7 TeamDetails</strong></td>
+                    <td>205</td>
+                    <td class="performance-excellent">0.236</td>
+                    <td class="">0.047</td>
+                    <td class="">2.549</td>
+                    <td class="performance-excellent">0.506</td>
+                    <td class="">0.00%</td>
+                    <td class="">0.06</td>
+                </tr>
+            
+                <tr class="">
+                    <td><strong>BP06_Challenges_Q6 TeamList</strong></td>
+                    <td>205</td>
+                    <td class="performance-excellent">0.228</td>
+                    <td class="">0.045</td>
+                    <td class="">2.509</td>
+                    <td class="performance-excellent">0.557</td>
+                    <td class="">0.00%</td>
+                    <td class="">0.06</td>
+                </tr>
+            
+                <tr class="">
+                    <td><strong>BP05_Challenges_Q5 Full Trophy Room</strong></td>
+                    <td>165</td>
+                    <td class="performance-excellent">0.312</td>
+                    <td class="">0.066</td>
+                    <td class="">4.855</td>
+                    <td class="performance-excellent">0.658</td>
+                    <td class="">0.00%</td>
+                    <td class="">0.04</td>
+                </tr>
+            
+                <tr class="">
+                    <td><strong>BP12_Challenges_Q12 Update Team</strong></td>
+                    <td>22</td>
+                    <td class="performance-good">1.693</td>
+                    <td class="">0.861</td>
+                    <td class="">2.850</td>
+                    <td class="performance-fair">2.521</td>
+                    <td class="">0.00%</td>
+                    <td class="">0.01</td>
+                </tr>
+            
+                <tr class="">
+                    <td><strong>BP01_Challenges_Q1 Carousel</strong></td>
+                    <td>207</td>
+                    <td class="performance-excellent">0.310</td>
+                    <td class="">0.030</td>
+                    <td class="">6.000</td>
+                    <td class="performance-excellent">0.696</td>
+                    <td class="performance-poor">0.97%</td>
+                    <td class="">0.06</td>
+                </tr>
+            
+                <tr class="">
+                    <td><strong>Q13 Leave Team</strong></td>
+                    <td>22</td>
+                    <td class="performance-good">1.812</td>
+                    <td class="">1.284</td>
+                    <td class="">4.681</td>
+                    <td class="performance-fair">2.147</td>
+                    <td class="">0.00%</td>
+                    <td class="">0.01</td>
+                </tr>
+            
+                <tr class="">
+                    <td><strong>BP02_Challenges_Q2 ChallengeHub</strong></td>
+                    <td>195</td>
+                    <td class="performance-poor">3.680</td>
+                    <td class="">0.140</td>
+                    <td class="">13.077</td>
+                    <td class="performance-poor">5.374</td>
+                    <td class="">0.00%</td>
+                    <td class="">0.05</td>
+                </tr>
+            
+                <tr class="">
+                    <td><strong>BP09_Challenges_Q9 Team Progress</strong></td>
+                    <td>159</td>
+                    <td class="performance-poor">4.456</td>
+                    <td class="">0.303</td>
+                    <td class="">16.182</td>
+                    <td class="performance-poor">7.289</td>
+                    <td class="">0.00%</td>
+                    <td class="">0.04</td>
+                </tr>
+            
+                <tr class="">
+                    <td><strong>BP11_Challenges_Q11 Join Team</strong></td>
+                    <td>160</td>
+                    <td class="performance-poor">3.194</td>
+                    <td class="">1.200</td>
+                    <td class="">16.874</td>
+                    <td class="performance-poor">6.574</td>
+                    <td class="">0.00%</td>
+                    <td class="">0.04</td>
+                </tr>
+            
+                <tr class="">
+                    <td><strong>BP08_Challenges_Q8 TeamDetails Edit</strong></td>
+                    <td>22</td>
+                    <td class="performance-excellent">0.247</td>
+                    <td class="">0.052</td>
+                    <td class="">2.408</td>
+                    <td class="performance-excellent">0.355</td>
+                    <td class="">0.00%</td>
+                    <td class="">0.01</td>
+                </tr>
+            
+                <tr class="">
+                    <td><strong>BP10_Challenges_Q10 Create Team</strong></td>
+                    <td>48</td>
+                    <td class="performance-poor">5.438</td>
+                    <td class="">3.301</td>
+                    <td class="">17.764</td>
+                    <td class="performance-poor">7.655</td>
+                    <td class="">0.00%</td>
+                    <td class="">0.01</td>
+                </tr>
+            
+                <tr class="total-row">
+                    <td><strong>TOTAL</strong></td>
+                    <td>1,741</td>
+                    <td class="">1.467</td>
+                    <td class="">0.030</td>
+                    <td class="">17.764</td>
+                    <td class="">2.496</td>
+                    <td class="">0.06%</td>
+                    <td class="">0.47</td>
+                </tr>
+            
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Trend Analysis Section (only if baseline provided) -->
+        <div class="section"><div class="section-header">Trend Analysis: Previous Run vs Current Run</div><div class="section-content">
+        <div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-left: 5px solid #6c757d; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+            <h4 style="color: #495057; margin-bottom: 15px;">📈 Trend Summary</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                <div style="text-align: center; padding: 15px; background: rgba(22, 160, 133, 0.1); border-radius: 8px;">
+                    <div style="font-size: 2em; color: #16a085; font-weight: bold;">0</div>
+                    <div style="color: #16a085;">Improved</div>
+                </div>
+                <div style="text-align: center; padding: 15px; background: rgba(127, 140, 141, 0.1); border-radius: 8px;">
+                    <div style="font-size: 2em; color: #7f8c8d; font-weight: bold;">0</div>
+                    <div style="color: #7f8c8d;">Stable</div>
+                </div>
+                <div style="text-align: center; padding: 15px; background: rgba(231, 76, 60, 0.1); border-radius: 8px;">
+                    <div style="font-size: 2em; color: #e74c3c; font-weight: bold;">14</div>
+                    <div style="color: #e74c3c;">Degraded</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Trend Charts will be displayed here -->
+        <div class="chart-container">
+            <canvas id="trendComparisonChart"></canvas>
+        </div>
+        </div></div>
+        
+        <!-- 90th Percentile Chart -->
+        <div class="section">
+            <div class="section-header">90th Percentile Response Times Analysis</div>
+            <div class="section-content">
+                <div class="chart-container">
+                    <canvas id="percentile90Chart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Response Times Overview Chart -->
+        <div class="section">
+            <div class="section-header">Response Times Overview (Min, Average, Max)</div>
+            <div class="section-content">
+                <div class="chart-container">
+                    <canvas id="responseTimeChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pass/Fail Criteria Section -->
+        <div class="section">
+            <div class="section-header">Pass/Fail Criteria Analysis</div>
+            <div class="section-content">
+                
+        <div style="background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%); 
+                    border-left: 5px solid #dc3545; 
+                    padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+            <h3 style="color: #721c24; margin-bottom: 15px;">
+                Overall Result: ❌ FAIL
+            </h3>
+        </div>
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+            <h4 style="color: #495057; margin-bottom: 15px;">Pass/Fail Criteria</h4>
+            <ul style="margin-left: 20px; color: #495057;">
+                <li><strong>Response Time Criterion:</strong> Maximum 2 transactions can have response time > 3 seconds</li>
+                <li><strong>Error Rate Criterion:</strong> No transaction should have error rate > 5%</li>
+            </ul>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+            <div style="background: #f8d7da; 
+                        border-left: 4px solid #dc3545; 
+                        padding: 15px; border-radius: 10px;">
+                <h4 style="color: #721c24;">Response Time Check</h4>
+                <p style="color: #721c24;">
+                    <strong>Found:</strong> 4 transactions > 3 seconds<br>
+                    <strong>Allowed:</strong> Maximum 2 transactions<br>
+                    <strong>Status:</strong> ❌ FAIL
+                </p>
+            </div>
+            <div style="background: #d4edda; 
+                        border-left: 4px solid #28a745; 
+                        padding: 15px; border-radius: 10px;">
+                <h4 style="color: #155724;">Error Rate Check</h4>
+                <p style="color: #155724;">
+                    <strong>Found:</strong> 0 transactions > 5% error rate<br>
+                    <strong>Allowed:</strong> 0 transactions<br>
+                    <strong>Status:</strong> ✅ PASS
+                </p>
+            </div>
+        </div>
+        
+            <div style="background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); 
+                        border-left: 5px solid #ffc107; padding: 20px; border-radius: 10px; margin-top: 20px;">
+                <h4 style="color: #856404;">Failure Reasons:</h4>
+                <ul style="color: #856404; margin-left: 20px;">
+            <li>4 transactions have response time > 3 seconds</li>
+                </ul>
+            </div>
+            
+            </div>
+        </div>
+        
+        <!-- Performance Analysis & Recommendations -->
+        <div class="section">
+            <div class="section-header">Performance Analysis & Recommendations</div>
+            <div class="section-content">
+                
+            <div class="recommendations">
+                <h4>Performance Issues Identified</h4>
+                <ul><li><strong>BP02_Challenges_Q2 ChallengeHub</strong>: 90th percentile is 5.374s (exceeds 3s threshold)</li><li><strong>BP09_Challenges_Q9 Team Progress</strong>: 90th percentile is 7.289s (exceeds 3s threshold)</li><li><strong>BP11_Challenges_Q11 Join Team</strong>: 90th percentile is 6.574s (exceeds 3s threshold)</li><li><strong>BP10_Challenges_Q10 Create Team</strong>: 90th percentile is 7.655s (exceeds 3s threshold)</li>
+                </ul>
+                <h4>General Performance Optimization Recommendations</h4>
+                <ul>
+                    <li>Analyze application bottlenecks and optimize code-level performance</li>
+                    <li>Review infrastructure resource utilization (CPU, Memory, Network, Disk I/O)</li>
+                    <li>Implement caching strategies for frequently accessed data and operations</li>
+                    <li>Analyze application logs to identify performance patterns and issues</li>
+                    <li>Optimize data access patterns and reduce unnecessary processing overhead</li>
+                    <li>Review system architecture and consider load balancing improvements</li>
+                </ul>
+            </div>
+            <div class="recommendations">
+                <h4>Error Analysis</h4>
+                <ul><li><strong>BP03_Challenges_Q3 Full Individual Leaderboard</strong>: Error rate is 0.60%</li><li><strong>BP01_Challenges_Q1 Carousel</strong>: Error rate is 0.97%</li>
+                </ul>
+                <h4>General Error Resolution Recommendations</h4>
+                <ul>
+                    <li>Analyze application and system logs for error patterns and root causes</li>
+                    <li>Review system monitoring and alerting to identify failure points</li>
+                    <li>Implement proper error handling and retry mechanisms in code</li>
+                    <li>Validate system dependencies and external service availability</li>
+                    <li>Check infrastructure stability and resource constraints during load</li>
+                    <li>Review configuration settings and environment-specific parameters</li>
+                </ul>
+            </div>
+            <div style="background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); border-left: 5px solid #28a745; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                <h4 style="color: #155724;">Well Performing Transactions</h4>
+                <ul style="list-style: none; padding: 0;"><li style="color: #155724; padding: 5px 0;"><span style="color: #28a745; font-weight: bold;">✓ </span><strong>BP04_Challenges_Q4 Full Team Leaderboard</strong>: Excellent performance at 0.395s</li><li style="color: #155724; padding: 5px 0;"><span style="color: #28a745; font-weight: bold;">✓ </span><strong>BP07_Challenges_Q7 TeamDetails</strong>: Excellent performance at 0.506s</li><li style="color: #155724; padding: 5px 0;"><span style="color: #28a745; font-weight: bold;">✓ </span><strong>BP06_Challenges_Q6 TeamList</strong>: Excellent performance at 0.557s</li><li style="color: #155724; padding: 5px 0;"><span style="color: #28a745; font-weight: bold;">✓ </span><strong>BP05_Challenges_Q5 Full Trophy Room</strong>: Excellent performance at 0.658s</li><li style="color: #155724; padding: 5px 0;"><span style="color: #28a745; font-weight: bold;">✓ </span><strong>BP08_Challenges_Q8 TeamDetails Edit</strong>: Excellent performance at 0.355s</li>
+                </ul>
+            </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Chart data
+        const chartData = {"transactions": ["BP04_Challenges_Q4 Full Team Leaderboard", "BP03_Challenges_Q3 Full Individual Leaderboard", "BP07_Challenges_Q7 TeamDetails", "BP06_Challenges_Q6 TeamList", "BP05_Challenges_Q5 Full Trophy Room", "BP12_Challenges_Q12 Update Team", "BP01_Challenges_Q1 Carousel", "Q13 Leave Team", "BP02_Challenges_Q2 ChallengeHub", "BP09_Challenges_Q9 Team Progress", "BP11_Challenges_Q11 Join Team", "BP08_Challenges_Q8 TeamDetails Edit", "BP10_Challenges_Q10 Create Team"], "short_names": ["Q4 Full Team Leaderboard", "Q3 Full Individual Leaderboard", "Q7 TeamDetails", "Q6 TeamList", "Q5 Full Trophy Room", "Q12 Update Team", "Q1 Carousel", "Q13 Leave Team", "Q2 ChallengeHub", "Q9 Team Progress", "Q11 Join Team", "Q8 TeamDetails Edit", "Q10 Create Team"], "full_names": ["BP04_Challenges_Q4 Full Team Leaderboard", "BP03_Challenges_Q3 Full Individual Leaderboard", "BP07_Challenges_Q7 TeamDetails", "BP06_Challenges_Q6 TeamList", "BP05_Challenges_Q5 Full Trophy Room", "BP12_Challenges_Q12 Update Team", "BP01_Challenges_Q1 Carousel", "Q13 Leave Team", "BP02_Challenges_Q2 ChallengeHub", "BP09_Challenges_Q9 Team Progress", "BP11_Challenges_Q11 Join Team", "BP08_Challenges_Q8 TeamDetails Edit", "BP10_Challenges_Q10 Create Team"], "averages": [0.187, 0.195, 0.236, 0.228, 0.312, 1.693, 0.31, 1.812, 3.68, 4.456, 3.194, 0.247, 5.438], "mins": [0.044, 0.054, 0.047, 0.045, 0.066, 0.861, 0.03, 1.284, 0.14, 0.303, 1.2, 0.052, 3.301], "maxs": [2.056, 1.935, 2.549, 2.509, 4.855, 2.85, 6.0, 4.681, 13.077, 16.182, 16.874, 2.408, 17.764], "percentile_90s": [0.395, 0.436, 0.506, 0.557, 0.658, 2.521, 0.696, 2.147, 5.374, 7.289, 6.574, 0.355, 7.655], "percentile_90_colors": ["#2ecc71", "#2ecc71", "#2ecc71", "#2ecc71", "#2ecc71", "#f39c12", "#2ecc71", "#f39c12", "#e74c3c", "#e74c3c", "#e74c3c", "#2ecc71", "#e74c3c"], "avg_colors": ["#2ecc71", "#2ecc71", "#2ecc71", "#2ecc71", "#2ecc71", "#3498db", "#2ecc71", "#3498db", "#e74c3c", "#e74c3c", "#e74c3c", "#2ecc71", "#e74c3c"]};
+        const trendChartData = {"transactions": ["BP04_Challenges_Q4 Full Team Leaderboard", "BP03_Challenges_Q3 Full Individual Leaderboard", "BP07_Challenges_Q7 TeamDetails", "BP06_Challenges_Q6 TeamList", "BP05_Challenges_Q5 Full Trophy Room", "BP12_Challenges_Q12 Update Team", "BP01_Challenges_Q1 Carousel", "Q13 Leave Team", "BP02_Challenges_Q2 ChallengeHub", "BP09_Challenges_Q9 Team Progress", "BP11_Challenges_Q11 Join Team", "BP08_Challenges_Q8 TeamDetails Edit", "BP10_Challenges_Q10 Create Team"], "short_names": ["Q4 Full Team Leaderboard", "Q3 Full Individual Leaderboard", "Q7 TeamDetails", "Q6 TeamList", "Q5 Full Trophy Room", "Q12 Update Team", "Q1 Carousel", "Q13 Leave Team", "Q2 ChallengeHub", "Q9 Team Progress", "Q11 Join Team", "Q8 TeamDetails Edit", "Q10 Create Team"], "baseline_p90": [0.153, 0.174, 0.159, 0.145, 0.236, 1.771, 0.228, 1.888, 0.647, 0.274, 2.014, 0.131, 4.913], "current_p90": [0.395, 0.436, 0.506, 0.557, 0.658, 2.521, 0.696, 2.147, 5.374, 7.289, 6.574, 0.355, 7.655], "baseline_avg": [0.089, 0.126, 0.117, 0.099, 0.141, 1.516, 0.156, 1.475, 0.31, 0.168, 1.612, 0.094, 3.759], "current_avg": [0.187, 0.195, 0.236, 0.228, 0.312, 1.693, 0.31, 1.812, 3.68, 4.456, 3.194, 0.247, 5.438], "baseline_min": [0.045, 0.061, 0.051, 0.046, 0.06, 1.278, 0.028, 1.278, 0.091, 0.065, 1.192, 0.051, 2.288], "current_min": [0.044, 0.054, 0.047, 0.045, 0.066, 0.861, 0.03, 1.284, 0.14, 0.303, 1.2, 0.052, 3.301], "baseline_max": [0.849, 1.143, 2.077, 2.082, 2.126, 3.319, 1.275, 2.621, 2.186, 2.071, 8.606, 0.426, 8.446], "current_max": [2.056, 1.935, 2.549, 2.509, 4.855, 2.85, 6.0, 4.681, 13.077, 16.182, 16.874, 2.408, 17.764], "trend_colors": ["#e74c3c", "#e74c3c", "#e74c3c", "#e74c3c", "#e74c3c", "#e74c3c", "#e74c3c", "#e74c3c", "#e74c3c", "#e74c3c", "#e74c3c", "#e74c3c", "#e74c3c"]};
+        
+        // PDF Export function
+        function exportToPDF() {
+            const element = document.querySelector('.container');
+            const exportButton = document.querySelector('.export-buttons');
+            
+            // Hide export buttons during PDF generation
+            exportButton.style.display = 'none';
+            
+            const opt = {
+                margin: 0.5,
+                filename: 'performance_report_20250728_144849.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    scrollX: 0,
+                    scrollY: 0
+                },
+                jsPDF: { 
+                    unit: 'in', 
+                    format: 'a4', 
+                    orientation: 'portrait',
+                    compress: true
+                }
+            };
+            
+            html2pdf().set(opt).from(element).save().then(() => {
+                // Show export buttons again
+                exportButton.style.display = 'block';
+            });
+        }
+        
+        // Enhanced chart options
+        const baseChartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        padding: 20,
+                        usePointStyle: true
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                    titleColor: '#ffffff',
+                    bodyColor: '#ffffff',
+                    borderColor: '#2a5298',
+                    borderWidth: 2,
+                    cornerRadius: 8,
+                    displayColors: true,
+                    titleFont: {
+                        size: 16,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 14
+                    },
+                    padding: 15,
+                    callbacks: {
+                        title: function(tooltipItems) {
+                            const dataIndex = tooltipItems[0].dataIndex;
+                            return chartData.full_names[dataIndex];
+                        },
+                        label: function(context) {
+                            return context.dataset.label + ': ' + context.parsed.y.toFixed(3) + 's';
+                        },
+                        afterBody: function(tooltipItems) {
+                            const dataIndex = tooltipItems[0].dataIndex;
+                            const value = tooltipItems[0].parsed.y;
+                            let performance = '';
+                            
+                            if (value > 3) {
+                                performance = 'Performance: Poor (> 3 seconds)';
+                            } else if (value > 2) {
+                                performance = 'Performance: Fair (2-3 seconds)';
+                            } else if (value > 1) {
+                                performance = 'Performance: Good (1-2 seconds)';
+                            } else {
+                                performance = 'Performance: Excellent (< 1 second)';
+                            }
+                            
+                            return [performance];
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        color: '#e0e0e0',
+                        lineWidth: 1
+                    },
+                    ticks: {
+                        font: {
+                            size: 12,
+                            weight: 'bold'
+                        },
+                        maxRotation: 45,
+                        minRotation: 0
+                    }
+                },
+                y: {
+                    grid: {
+                        color: '#e0e0e0',
+                        lineWidth: 1
+                    },
+                    ticks: {
+                        font: {
+                            size: 12
+                        },
+                        callback: function(value) {
+                            return value.toFixed(3) + 's';
+                        }
+                    },
+                    beginAtZero: true
+                }
+            }
+        };
+        
+        // 90th Percentile Chart - Changed to curved line chart
+        const ctx1 = document.getElementById('percentile90Chart').getContext('2d');
+        new Chart(ctx1, {
+            type: 'line',
+            data: {
+                labels: chartData.short_names,
+                datasets: [{
+                    label: '90th Percentile Response Time',
+                    data: chartData.percentile_90s,
+                    borderColor: '#8e44ad',
+                    backgroundColor: 'rgba(142, 68, 173, 0.1)',
+                    borderWidth: 4,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: chartData.percentile_90_colors,
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 3,
+                    pointRadius: 8,
+                    pointHoverRadius: 10,
+                }]
+            },
+            options: {
+                ...baseChartOptions,
+                plugins: {
+                    ...baseChartOptions.plugins,
+                    title: {
+                        display: true,
+                        text: '90th Percentile Response Times by Transaction',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Response Time Overview Chart
+        const ctx2 = document.getElementById('responseTimeChart').getContext('2d');
+        new Chart(ctx2, {
+            type: 'line',
+            data: {
+                labels: chartData.short_names,
+                datasets: [
+                    {
+                        label: 'Average Response Time',
+                        data: chartData.averages,
+                        borderColor: '#2980b9',
+                        backgroundColor: 'rgba(41, 128, 185, 0.1)',
+                        borderWidth: 4,
+                        fill: false,
+                        tension: 0.4,
+                        pointBackgroundColor: chartData.avg_colors,
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 3,
+                        pointRadius: 8,
+                        pointHoverRadius: 10
+                    },
+                    {
+                        label: 'Minimum Response Time',
+                        data: chartData.mins,
+                        borderColor: '#27ae60',
+                        backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                        borderWidth: 3,
+                        fill: false,
+                        tension: 0.4,
+                        pointBackgroundColor: '#27ae60',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    },
+                    {
+                        label: 'Maximum Response Time',
+                        data: chartData.maxs,
+                        borderColor: '#c0392b',
+                        backgroundColor: 'rgba(192, 57, 43, 0.1)',
+                        borderWidth: 3,
+                        fill: false,
+                        tension: 0.4,
+                        pointBackgroundColor: '#c0392b',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    }
+                ]
+            },
+            options: baseChartOptions
+        });
+        
+        // Trend Comparison Chart (only if baseline data exists)
+        console.log('Trend chart data:', trendChartData);
+        if (trendChartData && trendChartData.transactions && trendChartData.transactions.length > 0) {
+            console.log('Creating trend chart with', trendChartData.transactions.length, 'transactions');
+            const ctx3 = document.getElementById('trendComparisonChart').getContext('2d');
+            new Chart(ctx3, {
+                type: 'bar',
+                data: {
+                    labels: trendChartData.short_names,
+                    datasets: [
+                        {
+                            label: 'Previous Run (90th Percentile)',
+                            data: trendChartData.baseline_p90,
+                            backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                            borderColor: '#3498db',
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Current Run (90th Percentile)',
+                            data: trendChartData.current_p90,
+                            backgroundColor: 'rgba(155, 89, 182, 0.7)',
+                            borderColor: '#9b59b6',
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    ...baseChartOptions,
+                    plugins: {
+                        ...baseChartOptions.plugins,
+                        title: {
+                            display: true,
+                            text: 'Trend Comparison: Previous Run vs Current Run (90th Percentile)',
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        },
+                        tooltip: {
+                            ...baseChartOptions.plugins.tooltip,
+                            callbacks: {
+                                title: function(tooltipItems) {
+                                    const dataIndex = tooltipItems[0].dataIndex;
+                                    return trendChartData.transactions[dataIndex];
+                                },
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y.toFixed(3) + 's';
+                                },
+                                afterBody: function(tooltipItems) {
+                                    const dataIndex = tooltipItems[0].dataIndex;
+                                    const baseline = trendChartData.baseline_p90[dataIndex];
+                                    const current = trendChartData.current_p90[dataIndex];
+                                    const changePercent = ((current - baseline) / baseline) * 100;
+                                    
+                                    let trendText = '';
+                                    if (Math.abs(changePercent) <= 5) {
+                                        trendText = `→ Stable (${changePercent.toFixed(1)}%)`;
+                                    } else if (changePercent > 0) {
+                                        trendText = `↑ Degraded (+${changePercent.toFixed(1)}%)`;
+                                    } else {
+                                        trendText = `↓ Improved (${changePercent.toFixed(1)}%)`;
+                                    }
+                                    
+                                    return [`Trend: ${trendText}`];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ...baseChartOptions.scales.x
+                        },
+                        y: {
+                            ...baseChartOptions.scales.y
+                        }
+                    }
+                }
+            });
+        } else {
+            console.log('No trend data available, showing message');
+            // Show message when no trend data available
+            const trendContainer = document.querySelector('#trendComparisonChart').parentElement;
+            if (trendContainer) {
+                trendContainer.innerHTML = `
+                    <div style="text-align: center; padding: 50px; color: #6c757d;">
+                        <h4>📊 No Trend Data Available</h4>
+                        <p>Baseline comparison data not found. Ensure both files have matching transactions.</p>
+                    </div>
+                `;
+            }
+        }
+        
+        console.log("Enhanced performance dashboard loaded successfully");
+    </script>
+</body>
+</html>
